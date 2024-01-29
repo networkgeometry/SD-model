@@ -1,0 +1,16 @@
+
+===========================================================================================
+Inference of hidden degrees and parameter beta         
+version: 1.0
+started on: 1970/01/01 0:00 UTC
+edgelist filename: collins_yeast/collings_yeast.edge
+seed: 1700045018
+
+Loading edgelist......................................................................done.
+
+Checking number of connected components...
+    - More than one component found!!
+    - 1004/1622 vertices in the largest component.
+    - Edges belonging to the largest component saved to collins_yeast/collings_yeast_GC.edge.
+    - Please rerun the program using this new edgelist.
+

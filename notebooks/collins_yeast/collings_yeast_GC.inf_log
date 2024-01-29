@@ -1,0 +1,45 @@
+
+===========================================================================================
+Inference of hidden degrees and parameter beta         
+version: 1.0
+started on: 1970/01/01 0:00 UTC
+edgelist filename: collins_yeast/collings_yeast_GC.edge
+seed: 1700045032
+
+Loading edgelist......................................................................done.
+
+Checking number of connected components...............................................done.
+
+Analyzing degrees.....................................................................done.
+
+Computing local clustering............................................................done.
+
+Ordering vertices.....................................................................done.
+
+Properties of the graph
+    Nb vertices:                    1004
+    Nb edges:                       8319
+    Average degree:                 16.57
+    Minimum degree:                 1
+    Maximum degree:                 127
+    Nb of degree class:             89
+    Average clustering:             0.7223
+
+Inferring parameters...
+           beta      avg. clustering 
+         2.3098               0.5824 
+         3.4647               0.7000 
+         5.1971               0.7464 
+         4.3309               0.7264 
+                       ...............................................................done.
+
+Inferred ensemble (random positions)
+    Average degree:                 16.5717
+    Minimum degree:                 1
+    Maximum degree:                 127
+    Average clustering:             0.7264
+    Parameters
+      - beta:                       4.3309
+      - mu:                         0.0276
+      - radius_S1 (R):              159.7916
+
