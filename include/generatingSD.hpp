@@ -337,7 +337,7 @@ void generatingSD_t::save_vertices_properties(std::vector<int>& rdegree, std::ve
   double kappa_min = *std::min_element(kappa.begin(), kappa.end());
   const auto R = compute_radius(DIMENSION, NB_VERTICES);
   const double zeta = BETA > DIMENSION ? 1 : 1 / BETA;
-  const double hyp_radius = 2 / zeta * std::log(2 * R / std::pow(MU * kappa_min * kappa_min, std::max((double)DIMENSION, BETA) / DIMENSION));
+  const double hyp_radius = 2 / zeta * std::log(2 * R / std::pow(MU * kappa_min * kappa_min, std::max((double)DIMENSION, BETA) / (BETA * DIMENSION)));
   // Sets the name of the file to write the hidden variables into.
   std::string hidden_variables_filename = OUTPUT_ROOTNAME + ".gen_coord";
   // Opens the stream and terminates if the operation did not succeed.
