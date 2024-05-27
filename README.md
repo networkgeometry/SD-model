@@ -68,12 +68,12 @@ There are two types of possible usage:
 
 Compile code (c++17 or higher is required)
 ```
-g++ -O3 -std=c++17  src/generatingSD_unix.cpp -o generateSD
+g++ -O3 -std=c++17 -lboost_system -lboost_math_c99 src/generatingSD_unix.cpp -o genSD
 ```
 
 Run the code
 ```
-./generateSD -d <dimension_value> -b <beta_value> -n <network_size> -g <gamma> -k <mean_degree>
+./genSD -d <dimension_value> -b <beta_value> -n <network_size> -g <gamma> -k <mean_degree>
 ```
 
 The program accepts the following parameters:
@@ -82,6 +82,7 @@ The program accepts the following parameters:
 - `-n` - Size of the network
 - `-g` - Exponent of the power-law distribution for hidden degrees.
 - `-k` - Mean degree of the network
+- `-v` - (optional) Save generated coordinates to .gen_coord file
 
 The set of kappas will be generated from the power-law degree distribution with specified $\gamma$ value, i.e., $P(\kappa) \sim \kappa^{-\gamma}$. 
 
