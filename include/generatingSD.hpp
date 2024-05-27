@@ -37,8 +37,28 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <boost/math/quadrature/gauss.hpp>
+#include <functional>
 
 
+double integrate_3d(const std::function<double(double, double, double)>& func, 
+                    double ax, double bx, double ay, double by, double az, double bz)
+{
+    using namespace boost::math::quadrature;
+    auto integrand_z = [&](double z) {
+        auto integrand_y = [&](double y) {
+            auto integrand_x = [&](double x) {
+                return func(x, y, z);
+            };
+            gauss<double, 50> integrator_x;
+            return integrator_x.integrate(integrand_x, ax, bx);
+        };
+        gauss<double, 50> integrator_y;
+        return integrator_y.integrate(integrand_y, ay, by);
+    };
+    gauss<double, 50> integrator_z;
+    return integrator_z.integrate(integrand_z, az, bz);
+}
 
 class generatingSD_t
 {
@@ -107,11 +127,8 @@ class generatingSD_t
     std::vector<double> generate_random_d_vector(int dim);
     double compute_angle_d_vectors(const std::vector<double> &v1, const std::vector<double> &v2);
     inline double compute_radius(int dim, int N) const;
-
-    void fix_error_with_zero_degree_nodes(std::vector<int>& rdegree, std::vector<double>& edegree);
     // Gets and format current date/time.
     std::string get_time();
-
     void validate_input_parameters();
     void generate_powerlaw_distribution();
 };
@@ -159,8 +176,7 @@ void generatingSD_t::generate_powerlaw_distribution()
 
 void generatingSD_t::generate_edgelist(int width)
 {
-  const auto inside = NB_VERTICES / (2 * std::pow(PI, (DIMENSION + 1) / 2.0)) * std::tgamma((DIMENSION + 1) / 2.0);
-  const double radius = std::pow(inside, 1.0 / DIMENSION);
+  const double radius = compute_radius(DIMENSION, NB_VERTICES);
 
  // Initializes the random number generator.
   engine.seed(SEED);
@@ -202,6 +218,34 @@ void generatingSD_t::generate_edgelist(int width)
     MU = top1 / bottom1 * std::pow(second_part, 1 - BETA / DIMENSION);
   } else { // beta=dimension
     throw std::invalid_argument("Case beta=dimension is not implemented yet.");
+  }
+
+  // Compute mu numerically
+  const double kappa_0 = *std::min_element(kappa.begin(), kappa.end());
+  const double kappa_c = kappa_0 * pow(NB_VERTICES, 1.0 / (GAMMA - 1));
+  const double prefactorA = (GAMMA - 1) * pow(kappa_0, GAMMA - 1) / (1 - pow(kappa_c / kappa_0, 1 - GAMMA));
+  const double prefactorB = tgamma((DIMENSION + 1.0) / 2.0) / ((sqrt(PI) * tgamma(DIMENSION / 2.0)));
+  const double prefactor = NB_VERTICES * prefactorA * prefactorA * prefactorB;
+  
+  while (true) {
+    auto f = [&](double kappa1, double kappa2, double theta) {
+      const double top = pow(kappa1 * kappa2, -GAMMA) * pow(sin(theta), DIMENSION - 1);
+      double bottom = 1;
+      if (BETA > DIMENSION)
+        bottom = 1 + pow(radius * theta / pow(MU * kappa1 * kappa2, 1.0 / DIMENSION), BETA);
+      else
+        bottom = 1 + (pow(radius * theta, BETA) / pow(MU * kappa1 * kappa2, std::max((double)DIMENSION, BETA)/ DIMENSION));
+      return top / bottom;
+    };
+    double computedMeanDegree = prefactor * integrate_3d(f, kappa_0, kappa_c, kappa_0, kappa_c, 0, PI);
+
+    if (fabs(computedMeanDegree - MEAN_DEGREE) < 0.05)
+      break;
+    
+    if (computedMeanDegree < MEAN_DEGREE)
+      MU *= 1.5;
+    else
+      MU /= 2;      
   }
   
   if (DIMENSION == 1) {
@@ -254,7 +298,7 @@ void generatingSD_t::generate_edgelist(int width)
         dtheta = compute_angle_d_vectors(d_positions[v1], d_positions[v2]);
       }
       const auto inside = std::pow(radius * dtheta, BETA) / std::pow(MU * kappa[v1] * kappa[v2], std::max((double)DIMENSION, BETA) / DIMENSION);
-      const auto prob = 1 / (1 + inside); 
+      const auto prob = 1 / (1 + inside);
 
       if(uniform_01(engine) < prob)
       {
@@ -448,35 +492,6 @@ inline double generatingSD_t::compute_radius(int dim, int N) const
 {
   const auto inside = N / (2 * std::pow(PI, (dim + 1) / 2.0)) * std::tgamma((dim + 1) / 2.0);
   return std::pow(inside, 1.0 / dim);
-}
-
-void generatingSD_t::fix_error_with_zero_degree_nodes(std::vector<int>& rdegree, std::vector<double>& edegree) {
-  // Generated networks are usually smaller than the input ones
-  // To solve this issue we propose to add N_0 nodes with kappa values 
-  // sampled from the original kappas. In such a way we would obtain the 
-  // network with almost the same size and average degree as the input one.
-  
-  double mean_exp_kappa = 0;
-  for (int i=0; i<NB_VERTICES; ++i) {
-    mean_exp_kappa += std::exp(-kappa[i]);
-  }
-  mean_exp_kappa /= NB_VERTICES;
-  int N_0 = round(NB_VERTICES * mean_exp_kappa / (1 - mean_exp_kappa));  
-  int new_nb_vertices = NB_VERTICES + N_0;
-
-  std::cout << "Adding N_0 = " << N_0 << " nodes to the original network" << std::endl;  
-  std::vector<double> new_kappas;
-  std::sample(kappa.begin(), kappa.end(), std::back_inserter(new_kappas), N_0, std::mt19937{std::random_device{}()});
-
-  for (const auto &k: new_kappas)
-    kappa.push_back(k);
-
-  for (int i=0; i<N_0; ++i) {
-    rdegree.push_back(0);
-    edegree.push_back(0);
-    Num2Name.push_back("v" + std::to_string(NB_VERTICES + i));
-  }
-  NB_VERTICES = new_nb_vertices;
 }
 
 #endif // GENERATINGSD_HPP_INCLUDED

@@ -8,7 +8,7 @@
  * Date:    November 2017, October 2023
  * 
  * To compile (from the root repository of the project):
- *   g++ -O3 -std=c++17 src/generatingSD_unix.cpp -o generatingSD_unix.out
+ *   g++ -O3 -std=c++17 -lboost_system -lboost_math_c99 src/generatingSD_unix.cpp -o genSD
  * 
  * 
  * This program is free software: you can redistribute it and/or modify
